@@ -208,7 +208,9 @@ int handle_menuitem_2cols(const char **menu, int n, int *i, int h,
 		m = handle_menuitem(menu, h, i, x, y, handlers, keypr);
 	} else {
 		if (keypr == MVLEFT && j-h >= 0) {
-			m = -h;
+			/* the right column may be shorter than the left one;
+			 * clamp to its last row instead of jumping sideways */
+			m = (j-h < h) ? -h : h-1-j;
 			goto col;
 		}
 		j = *i-h;

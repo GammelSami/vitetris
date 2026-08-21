@@ -215,7 +215,7 @@ static void hiscoreline()
 static void print_top_scores()
 {
 	char s[8];
-	const struct hiscore *hs = hiscores;
+	const struct hiscore *hs = hiscores + hiscore_base();
 	int pos = 0;
 	int i = 1;
 	if (term_width < 47 || !hs[0].score)

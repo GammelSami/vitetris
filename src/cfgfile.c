@@ -18,9 +18,9 @@
 
 char cfgfilename[80] = CONFIG_FILENAME;
 
-static const char input_keynames[12][6] = {
+static const char input_keynames[14][7] = {
 	"left", "right", "up", "down", "a", "b", "start",
-	"rot", "sdrop", "rot-a", "rot-b", "hdrop"
+	"rot", "sdrop", "rot-a", "rot-b", "hdrop", "spd-up", "spd-dn"
 };
 static const char tcolor_keys[8] = "ijlostz";
 
@@ -115,6 +115,10 @@ static int nametokeypress_i(int i, int flags)
 		return STARTBTN;
 #endif
 	if (i == 12)
+		return SPEEDUP | IN_GAME | flags;
+	if (i == 13)
+		return SPEEDDOWN | IN_GAME | flags;
+	if (i == 14)
 		return 0;
 	return (i < 11 ? MVUP+i-7 : HARDDROP) | IN_GAME | flags;
 }
@@ -130,7 +134,7 @@ static int nametokeypress(char *name)
 	} else
 #endif
 	flags = 0;
-	while (strcmp(name, input_keynames[i]) && i < 12)
+	while (i < 14 && strcmp(name, input_keynames[i]))
 		i++;
 	return nametokeypress_i(i, flags);
 }
@@ -367,8 +371,8 @@ mappings:
 	do {
 		if (i == 5 && !isjoystick || i == 7)
 			i += 2;
-		else if (i == 11)
-			i = 8;
+		else if (i == 13)
+			i = 8;	/* "sdrop" must be written last */
 		else
 			i++;
 		keypress = nametokeypress_i(i, flags);
@@ -427,7 +431,7 @@ int writeconfig()
 	}
 	freeoptions("");
 	write_tetrom_colors(fp);
-	if (hiscores[0].score) {
+	if (hiscores[0].score || hiscores[HISCORE_LISTLEN].score) {
 		fprintf(fp, "[hiscore]\n");
 		writehiscores(fp);
 	}

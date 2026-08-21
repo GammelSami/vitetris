@@ -365,6 +365,12 @@ int processkey_ingame(int key, int flags)
 	case B_BTN:
 		rotate(plr, 0);
 		break;
+	case SPEEDUP:
+	case SPEEDDOWN:
+		/* levelup off: adjust the speed level */
+		if (TWOPLAYER_MODE || !game_running)
+			return -1;
+		return chg_speedlevel(plr, key==SPEEDUP ? 1 : -1) ? 1 : -1;
 	default:
 		return -1;
 	}

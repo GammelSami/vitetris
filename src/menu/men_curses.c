@@ -69,7 +69,7 @@ int gamemenu()
 	while (1) {
 		if (!TWOPLAYER_MODE) {
 			if (term_height >= 23)
-				show_hiscorelist5(5, GAMEMENU_LENGTH+9, 0);
+				show_hiscorelist5(0, 5, GAMEMENU_LENGTH+9, 0);
 		} else if (term_height < 23) {
 			setcurs(1, 4);
 			cleartoeol();

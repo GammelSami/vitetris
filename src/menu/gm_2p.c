@@ -6,6 +6,10 @@
 #include "../textgfx/textgfx.h"
 #include "../draw/draw.h"
 
+/* "Softdrop Speed" and "Fixed Speed" are single-player options */
+#define GM2P_LENGTH (GAMEMENU_LENGTH-2)
+#define GM2P_HEIGHT (GM2P_LENGTH+1)
+
 int gamemenu_2p(const char **menu, int x, int y, menuhandler *handlers)
 {
 	int yy = y;
@@ -14,12 +18,12 @@ int gamemenu_2p(const char **menu, int x, int y, menuhandler *handlers)
 	int i2 = 0;
 	int *i = &i1;
 begin:	draw_2p_menu_decor(1, x-1, y);
-	draw_2p_menu_decor(2, x-1, y+GAMEMENU_LENGTH);
+	draw_2p_menu_decor(2, x-1, y+GM2P_HEIGHT);
 	x += 2;
 back:	player_ = 1;
-	drawmenu(menu, GAMEMENU_LENGTH-1, i1, x, y, handlers);
+	drawmenu(menu, GM2P_LENGTH, i1, x, y, handlers);
 	player_ = 2;
-	drawmenu(menu, GAMEMENU_LENGTH-1, i2, x, y+GAMEMENU_LENGTH, handlers);
+	drawmenu(menu, GM2P_LENGTH, i2, x, y+GM2P_HEIGHT, handlers);
 	while (1) {
 		setcurs(x, yy+*i);
 		refreshwin(-1);
@@ -36,10 +40,10 @@ back:	player_ = 1;
 		} else {
 			player_ = 2;
 			i = &i2;
-			yy = y+GAMEMENU_LENGTH;
+			yy = y+GM2P_HEIGHT;
 		}
 		setcurs(x, yy+*i);
-		switch (handle_menuitem(menu, GAMEMENU_LENGTH-1, i,
+		switch (handle_menuitem(menu, GM2P_LENGTH, i,
 					x, yy+*i, handlers, keypr)) {
 		case 0:
 			return 0;

@@ -8,15 +8,19 @@
 #include "../draw/draw.h"
 #include "../game/tetris.h"
 
-void show_hiscorelist5(int x, int y, int i)
+/* i is the (0-based) position within list, not an index into hiscores[] */
+void show_hiscorelist5(int list, int x, int y, int i)
 {
 	char s[20];
+	const struct hiscore *base = hiscores + list*HISCORE_LISTLEN;
 	const struct hiscore *hs, *end;
 	int n;
-	if (!hiscores[0].score && !readhiscores(NULL))
+	if (!base[0].score && !readhiscores(NULL))
+		return;
+	if (!base[0].score)
 		return;
 	setcurs(x, y);
-	hs = hiscores;
+	hs = base;
 	i -= 5;
 	if (i < 0)
 		i = 0;
@@ -29,7 +33,8 @@ void show_hiscorelist5(int x, int y, int i)
 		} else {
 			setattr_normal();
 		}
-		n = sprintf(s, "%2d. %s", i+1, gethiscorename(i, s+12));
+		n = sprintf(s, "%2d. %s", i+1,
+			    gethiscorename(hs-hiscores, s+12));
 		memset(s+n, ' ', 12-n);
 		sprintf(s+12, "%7ld", (long) hs->score);
 		printstr(s);
@@ -180,16 +185,19 @@ static int playagain_menu(const char **menu, int x, int y)
 
 static int hiscorebox(const char **menu, int x, int y)
 {
+	const struct hiscore *l;
+	int list = !player1.autolevelup;
 	int i = 0;
-	while (i < 10 && hiscores[i].score >= player1.score)
+	l = hiscores + list*HISCORE_LISTLEN;
+	while (i < HISCORE_LISTLEN && l[i].score >= player1.score)
 		i++;
-	if (i < 10)
+	if (i < HISCORE_LISTLEN)
 		i++;
 	while (is_outside_screen(x+24, 0))
 		x--;
-	drawbox(x, y, 24, 11, "HIGHSCORES");
+	drawbox(x, y, 24, 11, list ? "LEVELUP OFF" : "HIGHSCORES");
 	x += 2;
-	show_hiscorelist5(x, y+2, i);
+	show_hiscorelist5(list, x, y+2, i);
 	if (playagain_menu(menu, x+2, y+8)) {
 		clearbox(x+21, y, 0, 11);
 		return 1;

@@ -1,3 +1,13 @@
+unreleased
+
+  * New "Level Up" game option (-levelup 0-1): with levelup off, the speed
+    level stays at the start level and can be changed with + and - during a
+    single-player game.  Both keys can be remapped in Input Setup.
+  * Such games are kept in a separate highscore list, switched with the left
+    and right arrow keys in the highscore screen.  Their entries are ignored
+    by version 0.57.2 and earlier -- this is intentional, but note that
+    saving the configuration with an older version discards them.
+
 2018-06-28: version 0.57.2
 
   * Update version date printed in command-line help

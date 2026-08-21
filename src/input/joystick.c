@@ -9,7 +9,8 @@ int js_dead = 1;
 
 static struct btns {
 	char menu_btns[7];
-	char ingame_btns[5];
+	/* MVUP, MVDOWN, A_BTN, B_BTN, HARDDROP, SPEEDUP, SPEEDDOWN */
+	char ingame_btns[7];
 } btns_joyst[2];
 
 static const char *getbtn(int b, const char *p, int n)
@@ -29,10 +30,14 @@ static char *getbtnfor(struct btns *js, int keypress)
 	int i;
 	if (keypress & IN_GAME) {
 		btns = js->ingame_btns;
-		if (keypress == (HARDDROP | IN_GAME))
-			i = 4;
-		else
-			i = (keypress & 7)-MVUP;
+		/* must be tested before the & 7 below: SPEEDUP & 7 == MVUP
+		 * and SPEEDDOWN & 7 == A_BTN */
+		switch (keypress & 63) {
+		case HARDDROP:	i = 4; break;
+		case SPEEDUP:	i = 5; break;
+		case SPEEDDOWN:	i = 6; break;
+		default:	i = (keypress & 7)-MVUP;
+		}
 	} else {
 		btns = js->menu_btns;
 		if (keypress == STARTBTN)
@@ -48,8 +53,13 @@ static int transl_btn(struct btns *js, int b, int flags)
 	const char *btns, *p;
 	if (flags & IN_GAME) {
 		btns = js->ingame_btns;
-		if (p = getbtn(b, btns, 5))
-			return p==btns+4 ? HARDDROP : MVUP+p-btns;
+		if (p = getbtn(b, btns, 7))
+			switch (p-btns) {
+			case 4:  return HARDDROP;
+			case 5:  return SPEEDUP;
+			case 6:  return SPEEDDOWN;
+			default: return MVUP+p-btns;
+			}
 	}
 	btns = js->menu_btns;
 	if (p = getbtn(b, btns, 7))
@@ -176,11 +186,17 @@ int js_getbtnfor(int i, int keypress)
 	b = *getbtnfor(js, keypress);
 	if (b)
 		return b;
-	if ((keypress & 63) == HARDDROP || keypress == (MVUP | IN_GAME))
+	switch (keypress & 63) {
+	case HARDDROP:
+	case SPEEDUP:
+	case SPEEDDOWN:
+		return 0;
+	}
+	if (keypress == (MVUP | IN_GAME))
 		return 0;
 	if (keypress & IN_GAME) {
 		b = js_getbtnfor(i, keypress ^ IN_GAME);
-		if (!b || getbtn(b, js->ingame_btns, 5))
+		if (!b || getbtn(b, js->ingame_btns, 7))
 			return 0;
 		return b;
 	}

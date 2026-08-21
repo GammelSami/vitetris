@@ -7,7 +7,7 @@
 #include "config.h"
 #include "options.h"
 
-struct hiscore hiscores[10] = {{"", 0}};
+struct hiscore hiscores[2*HISCORE_LISTLEN] = {{"", 0}};
 
 unsigned lastscore = 0;
 
@@ -15,26 +15,28 @@ static const char last_chars[8] = "Z≈ƒ÷!?‹";
 
 void writehiscores(FILE *fp);
 
-static void addhiscore(struct hiscore *hs)
+static void addhiscore(struct hiscore *hs, int list)
 {
+	struct hiscore *l = hiscores + list*HISCORE_LISTLEN;
 	int i;
-	if (hs->score > hiscores[0].score)
+	if (hs->score > l[0].score)
 		i = 0;
 	else {
-		i = 10;
-		while (hs->score > hiscores[i-1].score)
+		i = HISCORE_LISTLEN;
+		while (hs->score > l[i-1].score)
 			i--;
-		if (i == 10 || hs->score == hiscores[i-1].score &&
-			       hs->lines == hiscores[i-1].lines &&
-			       !strcmp(hs->name, hiscores[i-1].name))
+		if (i == HISCORE_LISTLEN || hs->score == l[i-1].score &&
+			       hs->lines == l[i-1].lines &&
+			       !strcmp(hs->name, l[i-1].name))
 			return;
 	}
-	memmove(hiscores+i+1, hiscores+i, (9-i)*sizeof(struct hiscore));
-	hiscores[i] = *hs;
+	memmove(l+i+1, l+i, (HISCORE_LISTLEN-1-i)*sizeof(struct hiscore));
+	l[i] = *hs;
 }
 
 /* valid characters [A-Z0-9 .!?-≈ƒ÷‹] */
-static int encodehiscore_name(const char *name, FILE *fp, int backcomp)
+static int encodehiscore_name(const char *name, FILE *fp, int backcomp,
+			      int list)
 {
 	int doshack = 0;
 	char s[8];
@@ -53,7 +55,10 @@ static int encodehiscore_name(const char *name, FILE *fp, int backcomp)
 			c -= 50;
 		s[i] = c;
 	}
-	s[i] = 60;
+	/* 60 terminates a list 0 name, 61 a list 1 name.  61 is rejected by
+	 * decodehiscore_name() in older versions, which is intended: they
+	 * silently skip levelup-off entries instead of showing garbage. */
+	s[i] = list ? 61 : 60;
 	if (i < 7)
 		s[i+1] = '\0';
 	i = 0;
@@ -88,7 +93,7 @@ static int encodehiscore_name(const char *name, FILE *fp, int backcomp)
 	return doshack;
 }
 
-static int decodehiscore_name(unsigned char *line, char *dest)
+static int decodehiscore_name(unsigned char *line, char *dest, int *list)
 {
 	int len = strlen(line);
 	int i = 0;
@@ -124,8 +129,10 @@ static int decodehiscore_name(unsigned char *line, char *dest)
 			c = line[j] >> 2;
 			j++;
 		}
-		if (c == 60)
+		if (c == 60 || c == 61) {
+			*list = (c == 61);
 			break;
+		}
 		if (c == 0)
 			return 0;
 		if (c == 3)
@@ -141,6 +148,8 @@ static int decodehiscore_name(unsigned char *line, char *dest)
 		dest[i] = c;
 		i++;
 	}
+	if (i == 8)	/* no terminator found */
+		return 0;
 	dest[i] = '\0';
 	if (i < 8 && i%4 < 3)
 		j++;
@@ -149,10 +158,11 @@ static int decodehiscore_name(unsigned char *line, char *dest)
 	return j;
 }
 
-static int encodehiscore(struct hiscore *hs, FILE *fp, int backcomp)
+static int encodehiscore(struct hiscore *hs, FILE *fp, int backcomp,
+			 int list)
 {
 	uint_least32_t d;
-	int doshack = encodehiscore_name(hs->name, fp, backcomp);
+	int doshack = encodehiscore_name(hs->name, fp, backcomp, list);
 	int c;
 	d = hs->score;
 	do {
@@ -178,9 +188,9 @@ static int iseol(int c)
 	return !c || c =='\n' || c=='\r';
 }
 
-static int decodehiscore(unsigned char *line, struct hiscore *hs)
+static int decodehiscore(unsigned char *line, struct hiscore *hs, int *list)
 {
-	int i = decodehiscore_name(line, hs->name);
+	int i = decodehiscore_name(line, hs->name, list);
 	int c;
 	if (!i || iseol(line[i]))
 		return 0;
@@ -205,7 +215,9 @@ static int decodehiscore(unsigned char *line, struct hiscore *hs)
 		return 0;
 	hs->level = line[i+1]-line[i];
 	c = line[i]-97-(hs->score & 7);
-	if (c < 0 || c > 10 || hs->level < c)
+	/* with levelup off, +/- can take the level below the start level;
+	 * such records are list 1 only and invisible to older versions */
+	if (c < 0 || c > 10 || (!*list && hs->level < c))
 		return 0;
 	hs->startlevel = c;
 	line += i+2;
@@ -228,9 +240,10 @@ static int decodehiscore(unsigned char *line, struct hiscore *hs)
 static int readhiscores_fp(FILE *fp, char *line, int try)
 {
 	struct hiscore hs;
+	int list;
 	while (fgets(line, 16, fp)) {
-		if (decodehiscore(line, &hs))
-			addhiscore(&hs);
+		if (decodehiscore(line, &hs, &list))
+			addhiscore(&hs, list);
 		else if (try)
 			return 0;
 		try = 0;
@@ -286,24 +299,34 @@ int readhiscores(const char *filename)
 	if (filename)
 		savehiscores_global();
 #endif
-	return (hiscores[0].score != 0);
+	return (hiscores[0].score != 0 || hiscores[HISCORE_LISTLEN].score != 0);
 }
 
+/* List 0 is written in full before list 1, each in descending order, so that
+ * reading the file back re-inserts every record at the slot it already has
+ * and addhiscore()'s duplicate check drops it.  Do not interleave the lists. */
 void writehiscores(FILE *fp)
 {
-	char doshack[10] = {0};
-	int i = 0;
-	while (i < 10 && hiscores[i].score) {
-		doshack[i] = encodehiscore(&hiscores[i], fp, 0);
-		putc('\n', fp);
-		i++;
-	}
-#ifdef UNIX
-	for (i=0; i < 10; i++)
-		if (doshack[i]) {
-			encodehiscore(&hiscores[i], fp, 1);
+	char doshack[2][HISCORE_LISTLEN];
+	struct hiscore *l;
+	int list, i;
+	memset(doshack, 0, sizeof doshack);
+	for (list = 0; list < 2; list++) {
+		l = hiscores + list*HISCORE_LISTLEN;
+		for (i = 0; i < HISCORE_LISTLEN && l[i].score; i++) {
+			doshack[list][i] = encodehiscore(l+i, fp, 0, list);
 			putc('\n', fp);
 		}
+	}
+#ifdef UNIX
+	for (list = 0; list < 2; list++) {
+		l = hiscores + list*HISCORE_LISTLEN;
+		for (i = 0; i < HISCORE_LISTLEN; i++)
+			if (doshack[list][i]) {
+				encodehiscore(l+i, fp, 1, list);
+				putc('\n', fp);
+			}
+	}
 #endif
 }
 
@@ -331,7 +354,7 @@ int savehiscore(const char *name)
 	hs.startlevel = player1.startlevel;
 	hs.level = player1.level;
 	hs.lines = player1.lines;
-	addhiscore(&hs);
+	addhiscore(&hs, !player1.autolevelup);
 	save_last_score(&hs);
 	n = writeconfig();
 	return (savehiscores_global() || n);
@@ -358,15 +381,17 @@ const char *gethiscorename(int i, char *buf)
 	return buf;
 }
 
-int gethiscorelist(char *s)
+int gethiscorelist(char *s, int list)
 {
 	char name[8];
+	struct hiscore *l = hiscores + list*HISCORE_LISTLEN;
 	struct hiscore *hs;
 	int i = 0;
 	int n;
-	while (i < 10 && hiscores[i].score) {
-		hs = hiscores+i;
-		n = sprintf(s, "%2d. %s", i+1, gethiscorename(i, name));
+	while (i < HISCORE_LISTLEN && l[i].score) {
+		hs = l+i;
+		n = sprintf(s, "%2d. %s", i+1,
+			    gethiscorename(list*HISCORE_LISTLEN+i, name));
 		memset(s+n, ' ', 12-n);
 		s += 12;
 		n = sprintf(s, "%7ld  %d-%d", (long) hs->score,
@@ -374,7 +399,7 @@ int gethiscorelist(char *s)
 		memset(s+n, ' ', 15-n);
 		s += 15;
 		sprintf(s, "%3d", hs->lines);
-		strcpy(s+3, i<9 ? " \n" : "\n");
+		strcpy(s+3, i<HISCORE_LISTLEN-1 ? " \n" : "\n");
 		s += 5;
 		i++;
 	}

@@ -7,20 +7,31 @@ int kb_no_autorep = 0;
 
 static struct keys {
 	unsigned short menu_keys[6];
-	unsigned short ingame_keys[5];
+	/* MVUP, MVDOWN, A_BTN, B_BTN, HARDDROP, SPEEDUP, SPEEDDOWN */
+	unsigned short ingame_keys[7];
 } keys_singlepl;
 
 #ifdef TWOPLAYER
 static struct keys keys_1p, keys_2p;
 #endif
 
+static int ingame_keypress(int i)
+{
+	switch (i) {
+	case 4:  return HARDDROP;
+	case 5:  return SPEEDUP;
+	case 6:  return SPEEDDOWN;
+	}
+	return MVUP+i;
+}
+
 static int transl_chr_ingame(unsigned c, unsigned short *keys)
 {
 	int i = 0;
 	keys += keys_singlepl.ingame_keys - keys_singlepl.menu_keys;
-	while (i < 5) {
+	while (i < 7) {
 		if (keys[i] == c)
-			return i==4 ? HARDDROP : MVUP+i;
+			return ingame_keypress(i);
 		i++;
 	}
 	return 0;
@@ -93,7 +104,7 @@ int kb_getpress(int flags)
 #endif
 	)
 		return c;
-	if (strchr("\033\b \npq", c))
+	if (strchr("\033\b \npq+-", c))
 		return c;
 	return kb_getpress(flags);
 }
@@ -112,10 +123,14 @@ static unsigned short *getchrfor(int keypress)
 	keys = keys_singlepl.menu_keys;
 	if (keypress & IN_GAME) {
 		keys += keys_singlepl.ingame_keys - keys_singlepl.menu_keys;
-		if ((keypress & 63) == HARDDROP)
-			i = 4;
-		else
-			i = (keypress & 7)-MVUP;
+		/* must be tested before the & 7 below: SPEEDUP & 7 == MVUP
+		 * and SPEEDDOWN & 7 == A_BTN */
+		switch (keypress & 63) {
+		case HARDDROP:	i = 4; break;
+		case SPEEDUP:	i = 5; break;
+		case SPEEDDOWN:	i = 6; break;
+		default:	i = (keypress & 7)-MVUP;
+		}
 	} else
 		i = (keypress & 7)-MVLEFT;
 	return keys+i;
@@ -251,7 +266,7 @@ int kb_getkeyfor(int keypr, unsigned char *dest, int fallback)
 	*dest = keypr;
 	dest[1] = 0;
 	c = 1;
-	if (keypr & IN_GAME && *dest != HARDDROP)
+	if (keypr & IN_GAME && *dest <= B_BTN)
 		c = kb_getkeyfor(keypr ^ IN_GAME, dest, 1);
 	if (c && !test_fallback(keypr, dest))
 		c = 0;

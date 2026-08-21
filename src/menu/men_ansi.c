@@ -61,7 +61,7 @@ int gamemenu()
 	while (1) {
 		i = game_menu(i-1, 1, 4);
 		if (i==4) {
-			setcurs(0, 13);
+			setcurs(0, GAMEMENU_LENGTH+3);
 			printf("\033[K");
 			inputsetup_box(0, 1, 4);
 			i = 1;

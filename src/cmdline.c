@@ -273,7 +273,7 @@ static void printhelp()
 static void printhelp_game()
 {
 	puts("Game options:");
-	printopts(15, "Single-player game",
+	printopts(16, "Single-player game",
 	  "mode 1	%s\n"
 	  "mode 1b	%s in B-type mode\n"
 	  "level 0-9	Starting level\n"
@@ -281,6 +281,7 @@ static void printhelp_game()
 	  "lines N	Lines limit (B-type mode)\n"
 	  "rotate 0-3	Rotation system\n"
 	  "softdrop N	Softdrop speed (drop N rows)\n"
+	  "levelup 0-1	Auto levelup (1) or fixed speed of start level (0)\n"
 #ifdef TWOPLAYER
 	  "mode 2[b]	Two-player game [B-type mode]\n"
 	  "	Player options are prefixed with p1 or p2 (e.g. -p1level 9)"
@@ -349,14 +350,24 @@ static int cmd_nomenu(const char *name, char *arg)
 	return 1;
 }
 
+/* buf holds one list at a time, so print them one after the other.
+ * List 0 comes first and unchanged, in case anything parses this output. */
 static void print_hiscorelist()
 {
 	char buf[320];
-	if (!readhiscores(NULL))
+	if (!readhiscores(NULL)) {
 		puts("No saved scores");
-	else {
+		return;
+	}
+	if (hiscores[0].score) {
 		printf("    Name      Score  Lvl  Lines\n");
-		gethiscorelist(buf);
+		gethiscorelist(buf, 0);
+		printf("%s", buf);
+	} else
+		puts("No saved scores");
+	if (hiscores[HISCORE_LISTLEN].score) {
+		printf("\nLevel Up off\n    Name      Score  Lvl  Lines\n");
+		gethiscorelist(buf, 1);
 		printf("%s", buf);
 	}
 }

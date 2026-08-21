@@ -19,7 +19,7 @@ static int gm_level(int k, int *pos)
 	} else if (k)
 		return 0;
 	i = p->startlevel+k;
-	if (i >= 0 && i < 10) {
+	if (i >= 0 && i <= MAX_LEVEL) {
 		p->startlevel = i;
 		printmenuitem_options("0 1 2 3 4 5 6 7 8 9", i);
 	}
@@ -99,6 +99,19 @@ static int gm_softdrop(int k, int *pos)
 	return 1;
 }
 
+/* Single-player only, so player_ is always 0 here (see GM2P_LENGTH). */
+static int gm_levelup(int k, int *pos)
+{
+	if (k==MVLEFT)
+		player1.autolevelup = 1;
+	else if (k==MVRIGHT)
+		player1.autolevelup = 0;
+	else if (k)
+		return 0;
+	printmenuitem_options("auto off", !player1.autolevelup);
+	return 1;
+}
+
 int game_menu(int i, int x, int y)
 {
 	const char *menu[GAMEMENU_LENGTH] = {
@@ -108,7 +121,8 @@ int game_menu(int i, int x, int y)
 		"Input Setup",
 		"Rotate",
 		"Rotation Sys",
-		"Softdrop Speed"
+		"Softdrop Speed",
+		"Level Up"
 #ifndef TWOPLAYER
 		,"-",
 		"Options",
@@ -118,7 +132,7 @@ int game_menu(int i, int x, int y)
 	menuhandler handlers[GAMEMENU_LENGTH] = {
 		gm_level, gm_height, NULL,
 		inputsetup_menuitem, gm_rotate, gm_orient,
-		gm_softdrop
+		gm_softdrop, gm_levelup
 #ifndef TWOPLAYER
 		,NULL, rarrow_menuitem, rarrow_menuitem
 #endif
@@ -157,6 +171,8 @@ int game_menu(int i, int x, int y)
 		if (!TWOPLAYER_MODE) {
 			v.integ = softdrop_speed;
 			setoption("", "softdrop", v, 0);
+			v.integ = p->autolevelup;
+			setoption("", "levelup", v, 0);
 			break;
 		}
 		if (p == &player2 || socket_fd > -1)

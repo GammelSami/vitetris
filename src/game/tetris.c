@@ -101,6 +101,26 @@ static void levelup(struct player *p)
 		p->falltime -= 2;
 }
 
+/* Replays levelup() from -1 rather than adjusting falltime directly, so that
+ * lowering the level works too.  Relies on levelup() being deterministic and
+ * free of side effects -- keep it that way. */
+void setlevel(struct player *p, int lev)
+{
+	p->level = -1;
+	while (p->level < lev)
+		levelup(p);
+}
+
+int chg_speedlevel(struct player *p, int d)
+{
+	int lev = p->level + d;
+	if (p->autolevelup || lev < 0 || lev > MAX_LEVEL)
+		return 0;
+	setlevel(p, lev);
+	upd_stat(p, 1);
+	return 1;
+}
+
 static void upd_score_level(struct player *p, int n)
 {
 	int lines;
@@ -131,6 +151,8 @@ static void upd_score_level(struct player *p, int n)
 		p->lines += n;
 		lines = p->lines;
 	}
+	if (!p->autolevelup)
+		return;
 	if (p->level == p->startlevel) {
 		if (lines >= 10*p->startlevel+10 || lines >= 100)
 			levelup(p);
@@ -750,9 +772,7 @@ void setupplayer(struct player *p)
 		p->score = 0;
 		memset(tetr_stats, 0, 7);
 	}
-	p->level = -1;
-	while (p->level < p->startlevel)
-		levelup(p);
+	setlevel(p, p->startlevel);
 	p->lines = (game->mode & MODE_BTYPE) ? p->lineslimit : 0;
 }
 

@@ -11,7 +11,7 @@ int inputsetup_menuitem(int k, int *p);
 #endif
 
 #ifdef TWOPLAYER
-#define GAMEMENU_LENGTH 7
+#define GAMEMENU_LENGTH 8
 int gamemenu_2p(const char **menu, int x, int y, menuhandler *handlers);
 #else
 #define gamemenu_2p(menu, x, y, handlers) 0

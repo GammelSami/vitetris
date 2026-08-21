@@ -15,12 +15,13 @@ extern int in_menu;
 
 int testgameopt(const char *key, int val, int pl)
 {
-	const char *keys[6] = {"mode", "level", "height",
-			       "lines","rotate","softdrop"};
-	const char max[6] = {127, 9, 5, 127, 3, 20};
+	const char *keys[7] = {"mode", "level", "height",
+			       "lines","rotate","softdrop","levelup"};
+	const char max[7] = {127, MAX_LEVEL, 5, 127, 3, 20, 1};
 	int i = 0;
-	int n = 6;
-	if (pl) { i++; n--; }
+	int n = 7;
+	/* "softdrop" and "levelup" are single-player options */
+	if (pl) { i++; n -= 2; }
 	for (; i < n; i++)
 		if (!strcmp(key, keys[i]))
 			return val >= 0 && val <= max[i] ? i+1 : -1;
@@ -33,6 +34,7 @@ static void initplayer(struct player *p)
 	p->height = 0;
 	p->lineslimit = 25;
 	p->rotationsys = ROT_CLOCKWISE | ROT_LEFTHAND;
+	p->autolevelup = 1;
 	p->score = 0;
 }
 
@@ -77,6 +79,8 @@ void initgame()
 			(&p->startlevel)[i-2] = v;
 		else if (i==6)
 			softdrop_speed = v;
+		else if (i==7)
+			p->autolevelup = v;
 #ifdef SOCKET
 		else if (!strcmp(opt_key(o), "name")) {
 			if (opt_isint(o))
@@ -120,7 +124,7 @@ int startgame()
 		return 0;
 #endif
 	}
-	if (!hiscores[0].score)
+	if (!hiscores[0].score && !hiscores[HISCORE_LISTLEN].score)
 		readhiscores(NULL);
 	return startgame_1p() && gameovermenu(
 		(game->mode & MODE_BTYPE) && player1.lines == 0 ?

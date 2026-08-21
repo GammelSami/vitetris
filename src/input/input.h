@@ -6,6 +6,8 @@
 #define A_BTN 5		/* rotate clockwise */
 #define B_BTN 6		/* rotate anticlockwise */
 #define HARDDROP ' '
+#define SPEEDUP '+'	/* levelup off: faster */
+#define SPEEDDOWN '-'	/* levelup off: slower */
 #define STARTBTN '\n'
 #define ESC '\033'
 #define DEL 0x7F

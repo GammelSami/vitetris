@@ -65,10 +65,10 @@ int dropdownlist(const char **items, int n, int i, int x, int y);
 int selectitem(const char **items, int n, int *i, int keypress);
 
 #ifndef TWOPLAYER
-#  define GAMEMENU_LENGTH 10
+#  define GAMEMENU_LENGTH 11
 #  define player_ 0
 #else
-#  define GAMEMENU_LENGTH 7
+#  define GAMEMENU_LENGTH 8
 
 extern int player_;  /* 0 - single player
 			1 - player1
@@ -81,7 +81,7 @@ void inputsetup_box(int player, int x, int y);
 int game_menu(int i, int x, int y);
 
 void show_hiscorelist(int x, int y);
-void show_hiscorelist5(int x, int y, int i);
+void show_hiscorelist5(int list, int x, int y, int i);
 int gameovermenu(const char *title);
 
 #endif /* !menu_h */

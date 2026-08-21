@@ -53,6 +53,7 @@ struct player {
 	char height;
 	char lineslimit;
 	char rotationsys;
+	char autolevelup;	/* automatic levelup on (default) */
 	struct tetr piece;
 	uint_least32_t board[20];
 	int_least32_t score;
@@ -116,6 +117,16 @@ int movedown(struct player *p, int drop);
 void rotate(struct player *p, int clockwise);
 int harddrop(struct player *p, int safe);
 int softdrop(int n, int safe);
+
+/* highest selectable level, both as start level and with levelup off */
+#define MAX_LEVEL 9
+
+/* Set level (and thereby falling speed) to lev. */
+void setlevel(struct player *p, int lev);
+
+/* With levelup off: change the speed level by d (+/- keys in game).
+ * Returns 0 if nothing was changed. */
+int chg_speedlevel(struct player *p, int d);
 
 void setupplayer(struct player *p);
 int startgame_1p();

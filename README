@@ -42,6 +42,17 @@ How to Play
   A-type means a normal "marathon" game.
   In a B-type game, the object is to clear 25 lines.
 
+  Level Up
+
+  Set "Level Up" to "off" in the game menu (or start with -levelup 0) to
+  switch off the automatic levelup: the game then keeps the speed of the
+  starting level forever.  During a single-player game, + and - change the
+  speed level (0-9) at any time; both keys can be remapped in Input Setup.
+
+  These games get their own highscore list, so that they do not push the
+  regular scores out.  Use the left and right arrow keys in the highscore
+  screen to switch between the two lists.
+
 
 Options
 -------

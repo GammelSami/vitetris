@@ -63,7 +63,7 @@ int gamemenu()
 #ifdef TWOPLAYER
 	while (1) {
 		if (!TWOPLAYER_MODE)
-			show_hiscorelist5(5, GAMEMENU_LENGTH+9, 0);
+			show_hiscorelist5(0, 5, GAMEMENU_LENGTH+9, 0);
 		i = game_menu(0, 1, 7);
 		if (i != 4)
 			break;
