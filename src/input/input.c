@@ -320,6 +320,20 @@ int processkey_ingame(int key, int flags)
 		return i;
 	}
 	if (flags & DISCARD_MOVES) {
+		if (flags & PREROTATE && !TWOPLAYER_MODE) {
+			plr = game->player;
+			switch (key & 0x7F) {
+			case MVUP:
+				prerotate(plr->rotationsys & ROT_CLOCKWISE);
+				return -1;
+			case A_BTN:
+				prerotate(1);
+				return -1;
+			case B_BTN:
+				prerotate(0);
+				return -1;
+			}
+		}
 		if (++discard_count > 5)
 			kb_flushinp();
 		return -1;

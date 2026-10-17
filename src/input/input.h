@@ -65,5 +65,7 @@ const char *getkeyfor_str(int dev, int keypress);
 #define DISCARD_MOVES 1
 #define DISCARD_DROPS 2
 #define NO_PAUSE 8
+/* with DISCARD_MOVES: buffer rotations for the next piece */
+#define PREROTATE 16
 
 int processkey_ingame(int keypress, int flags);
