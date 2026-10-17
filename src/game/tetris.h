@@ -115,6 +115,8 @@ void moveright(struct player *p);
 void moveleft(struct player *p);
 int movedown(struct player *p, int drop);
 void rotate(struct player *p, int clockwise);
+/* buffer a rotation for the next piece (during line clear animation) */
+void prerotate(int clockwise);
 int harddrop(struct player *p, int safe);
 int softdrop(int n, int safe);
 

@@ -8,6 +8,9 @@
 struct game *game = NULL;
 char clearedlines[4];
 
+/* net clockwise rotations buffered for the next piece (0-3) */
+static int prerot;
+
 #define RETURN_ON_INPUT 4
 
 /* process single-player input */
@@ -194,7 +197,7 @@ static void draw_lineclear_anim(int n)
 		}
 		tm = CLEAR_DELAY/5;
 		tm = (5-x)*tm-gettm(t)+t;
-		processinput(tm, DISCARD_MOVES | NO_PAUSE);
+		processinput(tm, DISCARD_MOVES | NO_PAUSE | PREROTATE);
 	}
 	redrawboard(&player1, clearedlines[n-1]-1);
 }
@@ -776,14 +779,29 @@ void setupplayer(struct player *p)
 	p->lines = (game->mode & MODE_BTYPE) ? p->lineslimit : 0;
 }
 
+void prerotate(int clockwise)
+{
+	prerot = (prerot + (clockwise ? 1 : 3)) % 4;
+}
+
 static int nextpiece(struct tetr *next)
 {
 	int i = randnum(7);
+	int n = prerot;
+	prerot = 0;
 	player1.piece = *next;
 	gettetrom(next, i);
 	tetr_stats[i]++;
 	drawnext(&player1, next);
-	return movedown(&player1, 0) && movedown(&player1, 0);
+	if (!(movedown(&player1, 0) && movedown(&player1, 0)))
+		return 0;
+	/* apply rotations entered during the line clear animation */
+	if (n == 3)
+		rotate(&player1, 0);
+	else
+		while (n--)
+			rotate(&player1, 1);
+	return 1;
 }
 
 int startgame_1p()
@@ -798,6 +816,7 @@ int startgame_1p()
 	if (!startgame_wait(SINGLE_PL))
 		return 0;
 	tetr_stats[i] = 1;
+	prerot = 0;
 	upd_stat(&player1, 0);
 	while (nextpiece(&next)) {
 		spawn_discard_drops(0);
@@ -823,7 +842,7 @@ gravity:		t = gettm(0);
 		}
 		if (player1.piece.y < 0)
 			break;
-		if (processinput(SPAWN_DELAY, DISCARD_MOVES) == -2)
+		if (processinput(SPAWN_DELAY, DISCARD_MOVES | PREROTATE) == -2)
 			return 0;
 	}
 	game->state = GAME_OVER;
@@ -854,8 +873,18 @@ int pausegame()
 	clearboard_paused();
 	hide_dropmarker(&player1);
 	drawnext(&player1, NULL);
-	do key = getkeypress_block(SINGLE_PL);
-	while (gettm(t)-t < 500);
+	while (1) {
+		key = getkeypress_block(SINGLE_PL | IN_GAME);
+		/* levelup off: +/- change the speed level without unpausing */
+		if (!player1.autolevelup && ((key & 0x7F) == SPEEDUP ||
+					     (key & 0x7F) == SPEEDDOWN)) {
+			chg_speedlevel(&player1,
+				       (key & 0x7F) == SPEEDUP ? 1 : -1);
+			continue;
+		}
+		if (gettm(t)-t >= 500)
+			break;
+	}
 	if (processkey_ingame(key, NO_PAUSE | DISCARD_MOVES) == -2)
 		return -2;
 	upd_screen(1);
